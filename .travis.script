@@ -19,3 +19,7 @@ if [ -z "$CROSS_BINPKGS" ]; then
 	make check
 	sudo make install
 fi
+
+if [ "$DO_COVERAGE" = "true" ]; then
+	coveralls --gcov-options '\-lp'
+fi

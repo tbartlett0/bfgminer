@@ -33,3 +33,7 @@ if [ -n "$CROSS_BINPKGS" ]; then
 		sudo tar -C "/usr/${CROSS_BINPKGS}/" -xjvpf "$f"
 	done
 fi
+
+if [ "$DO_COVERAGE" = "true" ]; then
+	sudo pip install cpp-coveralls
+fi

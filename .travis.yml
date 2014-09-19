@@ -10,7 +10,7 @@ matrix:
   include:
     - compiler: ": Full GCC"
       # Upgrade GCC to avoid false warnings; build the full project with -Werror
-      env: myCC='gcc' UBUNTU_DEPS='gcc libhidapi-dev linux-libc-dev' EXTRA_DEPS='pkg-config libncursesw5-dev libudev-dev libusb-1.0-0-dev libevent-dev libmicrohttpd-dev libi2c-dev yasm libsensors4-dev' BUILD_CFLAGS='-Werror' CONFIGURE_ARGS='--enable-other-drivers --enable-scrypt --without-system-libbase58 --enable-tool'
+      env: myCC='gcc' UBUNTU_DEPS='gcc libhidapi-dev linux-libc-dev' EXTRA_DEPS='pkg-config libncursesw5-dev libudev-dev libusb-1.0-0-dev libevent-dev libmicrohttpd-dev libi2c-dev yasm libsensors4-dev' BUILD_CFLAGS='-Werror --coverage' CONFIGURE_ARGS='--enable-other-drivers --enable-scrypt --without-system-libbase58 --enable-tool LDFLAGS=--coverage' DO_COVERAGE=true
     - compiler: ": Full LLVM"
       env: myCC='clang' UBUNTU_DEPS='libhidapi-dev linux-libc-dev' EXTRA_DEPS='pkg-config libncursesw5-dev libudev-dev libusb-1.0-0-dev libevent-dev libmicrohttpd-dev libi2c-dev yasm libsensors4-dev' BUILD_CFLAGS='-Werror' CONFIGURE_ARGS='--enable-other-drivers --enable-scrypt --without-system-libbase58 --enable-tool'
     - compiler: ": pkgconf"
