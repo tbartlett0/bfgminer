@@ -282,7 +282,8 @@ bfgminer_SOURCES += driver-knc.c
 endif
 
 if USE_KNCASIC
-bfgminer_SOURCES += driver-kncasic.c
+bfgminer_SOURCES += driver-kncasic.c knc-asic.c knc-asic.h knc-transport-spi.c knc-transport.h
+bfgminer_LDADD += -lz
 endif
 
 if HAS_KLONDIKE

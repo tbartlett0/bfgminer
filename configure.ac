@@ -620,7 +620,6 @@ if test "x$kncasic" != xno && test "x$kncasic" != xauto; then
 		kncasic_controller=BBB
 	fi
 	kncasic=yes
-	need_knc_asic=yes
 	need_linux_i2c_dev=yes
 	AC_DEFINE([USE_KNCASIC], [1], [Defined to 1 if KnC gen 2 support is wanted])
 	AC_DEFINE_UNQUOTED([CONTROLLER_BOARD_$kncasic_controller],[1])

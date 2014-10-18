@@ -24,8 +24,8 @@
 #include "deviceapi.h"
 #include "logging.h"
 #include "miner.h"
-#include "knc-asic/knc-transport.h"
-#include "knc-asic/knc-asic.h"
+#include "knc-transport.h"
+#include "knc-asic.h"
 
 #define MAX_ASICS               6
 #define DIES_PER_ASIC           4
@@ -348,7 +348,7 @@ static bool knc_detect_one(void *ctx)
 static
 bool kncasic_detect_one(const char * const devpath)
 {
-	void *ctx = knc_trnsp_new(devpath);
+	void *ctx = knc_trnsp_new(0);
 
 	if (ctx != NULL) {
 		if (!knc_detect_one(ctx))
