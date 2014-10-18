@@ -282,7 +282,7 @@ bfgminer_SOURCES += driver-knc.c
 endif
 
 if USE_KNCASIC
-bfgminer_SOURCES += driver-kncasic.c knc-asic.c knc-asic.h knc-transport-spi.c knc-transport.h
+bfgminer_SOURCES += driver-kncasic.c knc-asic.c knc-asic.h knc-transport-spimux.c knc-transport.h knc-spimux.c
 bfgminer_LDADD += -lz
 endif
 

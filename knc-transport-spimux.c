@@ -13,10 +13,16 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "logging.h"
 #include "miner.h"
 #include "knc-transport.h"
+
+#define UNUSED __attribute__((unused))
 
 #define SPI_DEVICE_TEMPLATE	"/dev/spidev%d.%d"
 #define SPI_MODE		(SPI_CPHA | SPI_CPOL | SPI_CS_HIGH)
@@ -107,7 +113,7 @@ void knc_trnsp_free(void *opaque_ctx)
 	free(ctx);
 }
 
-int knc_trnsp_transfer(void *opaque_ctx, uint8_t *txbuf, uint8_t *rxbuf, int len)
+int knc_trnsp_transfer(void *opaque_ctx, const uint8_t *txbuf, uint8_t *rxbuf, int len)
 {
 	struct spidev_context *ctx = opaque_ctx;
 	struct spi_ioc_transfer xfr;
@@ -135,13 +141,12 @@ int knc_trnsp_transfer(void *opaque_ctx, uint8_t *txbuf, uint8_t *rxbuf, int len
 	return ret;
 }
 
-bool knc_trnsp_asic_detect(void *opaque_ctx, int chip_id)
+bool knc_trnsp_asic_detect(UNUSED void *opaque_ctx, UNUSED int chip_id)
 {
 	return true;
 }
 
-void knc_trnsp_periodic_check(void *opaque_ctx)
+void knc_trnsp_periodic_check(UNUSED void *opaque_ctx)
 {
 	return;
 }
-

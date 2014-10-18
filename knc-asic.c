@@ -19,34 +19,14 @@
 #include <linux/spi/spidev.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <zlib.h>
 
 #include "miner.h"
 #include "logging.h"
 
-#include "knc-transport.h"
-
 #include "knc-asic.h"
-
-/* Control Commands
- *
- * SPI command on channel. 1-
- *   1'b1 3'channel 12'msglen_in_bits SPI message data
- * Sends the supplied message on selected SPI bus
- *
- * Communication test
- *   16'h1 16'x
- * Simple test of SPI communication
- *
- * LED control
- *   4'h1 4'red 4'green 4'blue
- * Sets led colour
- *
- * Clock frequency
- *   4'h2 12'msglen_in_bits 4'channel 4'die 16'MHz 512'x
- * Configures the hashing clock rate
- */
 
 /* ASIC Command structure
  * command      8 bits
@@ -328,93 +308,17 @@ void knc_prepare_neptune_message(int request_length, const uint8_t *request, uin
     PUT_ULONG_BE(crc, buffer, 0);
 }
 
-int knc_transfer_length(int request_length, int response_length)
-{
-	/* FPGA control, request header, request body/response, CRC(4), ACK(1), EXTRA(3) */
-	return 2 + max(request_length, 4 + response_length ) + 4 + 1 + 3;
-}
-
-int knc_prepare_transfer(uint8_t *txbuf, int offset, int size, int channel, int request_length, const uint8_t *request, int response_length)
-{
-	/* FPGA control, request header, request body/response, CRC(4), ACK(1), EXTRA(3) */
-        int msglen = max(request_length, 4 + response_length ) + 4 + 1 + 3;
-        int len = 2 + msglen;
-	txbuf += offset;
-
-	if (len + offset > size) {
-		applog(LOG_DEBUG, "KnC SPI buffer full");
-		return -1;
-	}
-	txbuf[0] = 1 << 7 | (channel+1) << 4 | (msglen * 8) >> 8;
-	txbuf[1] = (msglen * 8);
-	knc_prepare_neptune_message(request_length, request, txbuf+2);
-
-	return offset + len;
-}
-
-/* red, green, blue valid range 0 - 15 */
-int knc_prepare_led(uint8_t *txbuf, int offset, int size, int red, int green, int blue)
-{
-	/* 4'h1 4'red 4'green 4'blue */
-        int len = 2;
-	txbuf += offset;
-
-	if (len + offset > size) {
-		applog(LOG_DEBUG, "KnC SPI buffer full");
-		return -1;
-	}
-	txbuf[0] = 1 << 4 | red;
-	txbuf[1] = green << 4 | blue;
-
-	return offset + len;
-	
-}
-
-/* reset controller */
-int knc_prepare_reset(uint8_t *txbuf, int offset, int size)
-{
-	/* 16'h0002 16'unused */
-        int len = 4;
-	txbuf += offset;
-
-	if (len + offset > size) {
-		applog(LOG_DEBUG, "KnC SPI buffer full");
-		return -1;
-	}
-	txbuf[0] = (0x0002) >> 8;
-	txbuf[1] = (0x0002) & 0xff;
-	txbuf[2] = 0;
-	txbuf[3] = 0;
-
-	return offset + len;
-}
-
-/* request_length = 0 disables communication checks, i.e. Jupiter protocol */
-int knc_decode_response(uint8_t *rxbuf, int request_length, uint8_t **response, int response_length)
+int knc_check_response(uint8_t *response, int response_length, uint8_t ack)
 {
     int ret = 0;
-    int len = knc_transfer_length(request_length, response_length);
-    if (request_length > 0 && response_length > 0) {
-        uint32_t crc, recv_crc;
+    if (response_length > 0) {
+	uint32_t crc, recv_crc;
 	crc = crc32(0, Z_NULL, 0);
-        crc = crc32(crc, rxbuf + 2 + 4, response_length);
-	recv_crc = GET_ULONG_BE(rxbuf + 2 + 4, response_length);
+	crc = crc32(crc, response, response_length);
+	recv_crc = GET_ULONG_BE(response, response_length);
 	if (crc != recv_crc)
-                ret |= KNC_ERR_CRC;
+	    ret |= KNC_ERR_CRC;
     }
-
-    if (response) {
-	if (response_length > 0) {
-	    *response = rxbuf + 2 + 4;
-	} else {
-	    *response = NULL;
-	}
-    }
-      
-    if (response_length == 0)
-	return 0;
-
-    uint8_t ack = rxbuf[len - 4];
 
     if ((ack & KNC_ASIC_ACK_MASK) != KNC_ASIC_ACK_MATCH)
         ret |= KNC_ERR_ACK;
@@ -422,25 +326,7 @@ int knc_decode_response(uint8_t *rxbuf, int request_length, uint8_t **response, 
         ret |= KNC_ERR_CRCACK;
     if ((ack & KNC_ASIC_ACK_ACCEPT))
         ret |= KNC_ACCEPTED;
-    if (ret && memcmp(&rxbuf[len-4], "\377\377\377\377", 4) == 0)
-	ret = KNC_ERR_UNAVAIL;
     return ret;
-}
-
-int knc_syncronous_transfer(void *ctx, int channel, int request_length, const uint8_t *request, int response_length, uint8_t *response)
-{
-    int len = knc_transfer_length(request_length, response_length);
-    uint8_t txbuf[len];
-    uint8_t rxbuf[len];
-    memset(txbuf, 0, len);
-    knc_prepare_transfer(txbuf, 0, len, channel, request_length, request, response_length);
-    knc_trnsp_transfer(ctx, txbuf, rxbuf, len);
-
-    uint8_t *response_buf;
-    int rc = knc_decode_response(rxbuf, request_length, &response_buf, response_length);
-    if (response)
-	memcpy(response, response_buf, response_length);
-    return rc;
 }
 
 int knc_decode_info(uint8_t *response, struct knc_die_info *die_info)
